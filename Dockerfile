@@ -20,6 +20,9 @@ RUN pip install gunicorn
 # Copiar el resto de los archivos del proyecto al contenedor
 COPY . /app
 
+# Crear directorios para media y static
+RUN mkdir -p /app/media /app/static
+
 # Exponer el puerto en el que se ejecutará la aplicación
 EXPOSE 8000
 
