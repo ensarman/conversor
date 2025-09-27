@@ -8,7 +8,6 @@ django = "*"
 openpyxl = "*"
 xlrd = "*"
 beautifulsoup4 = "*"
-mariadb = "*"
 mysqlclient = "*"
 
 [dev-packages]
