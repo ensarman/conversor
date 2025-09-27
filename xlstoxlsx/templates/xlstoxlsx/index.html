@@ -1,0 +1,413 @@
+{% extends "xlstoxlsx/base.html" %}
+{% block title %}
+    Convertidor XLS a XLSX - Convierte tus archivos de Excel
+{% endblock title %}
+{% block extra_css %}
+    <style>
+        .file-info-hidden {
+            display: none;
+        }
+
+        .progress-custom {
+            height: 10px;
+        }
+
+        .progress-bar-custom {
+            width: 0%;
+        }
+    </style>
+{% endblock extra_css %}
+{% block content %}
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Hero Section -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary mb-3">
+                    <i class="bi bi-file-earmark-excel me-3"></i>
+                    Convertidor XLS → XLSX
+                </h1>
+                <p class="lead text-muted">
+                    Convierte archivos XLS legacy y reportes HTML con extensión .xls al formato XLSX moderno de forma rápida y segura.
+                </p>
+            </div>
+            <!-- Upload Form -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Drop Zone -->
+                        <div class="drop-zone" id="dropZone">
+                            <div class="mb-3">
+                                <i class="bi bi-cloud-upload display-1 text-primary mb-3"></i>
+                                <h4>Arrastra y suelta tu archivo XLS aquí</h4>
+                                <p class="text-muted mb-3">
+                                    Soporta archivos XLS nativos y reportes HTML con extensión .xls
+                                    <br />
+                                    <small>o haz clic para seleccionar un archivo</small>
+                                </p>
+                                <input type="file" id="fileInput" name="file" accept=".xls" class="d-none" />
+                                <button type="button" class="btn btn-primary" id="selectFileBtn">
+                                    <i class="bi bi-folder2-open me-2"></i>
+                                    Seleccionar Archivo
+                                </button>
+                            </div>
+                            <div class="file-info file-info-hidden" id="fileInfo">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <i class="bi bi-file-earmark-excel text-success me-2"></i>
+                                        <span id="fileName"></span>
+                                        <small class="text-muted ms-2" id="fileSize"></small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="removeFile">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Convert Button -->
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-lg" id="convertBtn" disabled>
+                                <i class="bi bi-arrow-repeat me-2"></i>
+                                Convertir a XLSX
+                            </button>
+                        </div>
+                    </form>
+                    <!-- Progress Bar -->
+                    <div class="progress-container d-none" id="progressContainer">
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Procesando archivo...</span>
+                                <span class="text-muted" id="progressText">0%</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated progress-bar-custom"
+                                     role="progressbar"
+                                     id="progressBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Conversion Result -->
+                    <div class="conversion-result d-none" id="conversionResult">
+                        <!-- Success/Error messages will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <!-- Info Cards -->
+            <div class="row mt-5">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-lightning-charge display-4 text-warning mb-3"></i>
+                            <h5 class="card-title">Conversión Rápida</h5>
+                            <p class="card-text text-muted">Procesamiento optimizado para convertir archivos de cualquier tamaño en segundos.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-check display-4 text-success mb-3"></i>
+                            <h5 class="card-title">100% Seguro</h5>
+                            <p class="card-text text-muted">
+                                Tus archivos se procesan localmente y se eliminan automáticamente después de la conversión.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-check2-circle display-4 text-info mb-3"></i>
+                            <h5 class="card-title">Sin Pérdidas</h5>
+                            <p class="card-text text-muted">Mantiene todos los datos, fórmulas y formato original de tu archivo Excel.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if recent_conversions %}
+                <!-- Recent Conversions -->
+                <div class="mt-5">
+                    <h4 class="mb-3">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Conversiones Recientes
+                    </h4>
+                    <div class="list-group">
+                        {% for conversion in recent_conversions %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark-excel text-success me-2"></i>
+                                    <strong>{{ conversion.original_filename }}</strong>
+                                    <small class="text-muted ms-2">{{ conversion.created_at|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                {% if conversion.get_download_url %}
+                                    <a href="{{ conversion.get_download_url }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download me-1"></i>
+                                        Descargar
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const convertBtn = document.getElementById('convertBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const removeFile = document.getElementById('removeFile');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const conversionResult = document.getElementById('conversionResult');
+
+            let selectedFile = null;
+
+            // Drag and drop functionality
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelection(files[0]);
+                }
+            });
+
+            // File selection button
+            selectFileBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+
+            // Click on drop zone to select file
+            dropZone.addEventListener('click', function(e) {
+                if (e.target === dropZone || e.target.closest('.drop-zone')) {
+                    fileInput.click();
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileSelection(e.target.files[0]);
+                }
+            });
+
+            // Remove file
+            removeFile.addEventListener('click', function(e) {
+                e.stopPropagation();
+                clearFileSelection();
+            });
+
+            // Form submission
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                if (!selectedFile) {
+                    showAlert('Por favor selecciona un archivo XLS.', 'warning');
+                    return;
+                }
+
+                convertFile();
+            });
+
+            function handleFileSelection(file) {
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.xls')) {
+                    showAlert('Por favor selecciona un archivo con extensión .xls', 'danger');
+                    return;
+                }
+
+                // Validate file size (50MB max)
+                if (file.size > 50 * 1024 * 1024) {
+                    showAlert('El archivo es demasiado grande. Máximo 50MB permitido.', 'danger');
+                    return;
+                }
+
+                selectedFile = file;
+
+                // Show file info
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.remove('file-info-hidden');
+                convertBtn.disabled = false;
+            }
+
+            function clearFileSelection() {
+                selectedFile = null;
+                fileInput.value = '';
+                fileInfo.classList.add('file-info-hidden');
+                convertBtn.disabled = true;
+                hideProgress();
+                hideResult();
+            }
+
+            function convertFile() {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                // Show progress
+                showProgress();
+                convertBtn.disabled = true;
+
+                // Simulate progress animation
+                let progress = 0;
+                const progressInterval = setInterval(function() {
+                    progress += Math.random() * 30;
+                    if (progress > 90) progress = 90;
+                    updateProgress(progress);
+                }, 200);
+
+                // Make the conversion request
+                fetch('{% url "xlstoxlsx:convert" %}', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        clearInterval(progressInterval);
+                        updateProgress(100);
+
+                        setTimeout(() => {
+                            hideProgress();
+                            convertBtn.disabled = false;
+
+                            if (data.success) {
+                                showSuccessResult(data);
+                            } else {
+                                showErrorResult(data.error);
+                            }
+                        }, 500);
+                    })
+                    .catch(error => {
+                        clearInterval(progressInterval);
+                        hideProgress();
+                        convertBtn.disabled = false;
+                        showErrorResult('Error de conexión: ' + error.message);
+                    });
+            }
+
+            function showProgress() {
+                progressContainer.classList.remove('d-none');
+                updateProgress(0);
+            }
+
+            function hideProgress() {
+                progressContainer.classList.add('d-none');
+            }
+
+            function updateProgress(percent) {
+                progressBar.style.width = percent + '%';
+                progressText.textContent = Math.round(percent) + '%';
+            }
+
+            function showSuccessResult(data) {
+                // Determinar el tipo de archivo y mensaje apropiado
+                let fileTypeIcon = 'bi-file-earmark-excel';
+                let fileTypeText = '';
+
+                if (data.file_format === 'html') {
+                    fileTypeIcon = 'bi-filetype-html';
+                    fileTypeText = '<small class="text-muted d-block">Detectado como: Archivo HTML con extensión .xls</small>';
+                } else if (data.file_format === 'xls') {
+                    fileTypeIcon = 'bi-file-earmark-excel';
+                    fileTypeText = '<small class="text-muted d-block">Detectado como: Archivo XLS nativo</small>';
+                }
+
+                conversionResult.innerHTML = `
+            <div class="alert alert-success">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-3 display-6"></i>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">¡Conversión Exitosa!</h5>
+                        <p class="mb-2">
+                            Tu archivo ha sido convertido correctamente a formato XLSX.
+                            ${fileTypeText}
+                        </p>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="${fileTypeIcon} text-success me-2"></i>
+                            <span class="text-muted">${data.message}</span>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex">
+                            <a href="${data.download_url}" class="btn btn-success">
+                                <i class="bi bi-download me-2"></i>
+                                Descargar ${data.converted_filename}
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                                Convertir Otro Archivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+                conversionResult.classList.remove('d-none');
+            }
+
+            function showErrorResult(errorMessage) {
+                conversionResult.innerHTML = `
+            <div class="alert alert-danger">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-circle-fill me-3 display-6"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Error en la Conversión</h5>
+                        <p class="mb-0">${errorMessage}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+                conversionResult.classList.remove('d-none');
+            }
+
+            function hideResult() {
+                conversionResult.classList.add('d-none');
+            }
+
+            function showAlert(message, type) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+                const container = document.querySelector('main .container');
+                container.insertBefore(alertDiv, container.firstChild);
+
+                // Auto dismiss after 5 seconds
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+
+            function formatFileSize(bytes) {
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                if (bytes === 0) return '0 Bytes';
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+            }
+        });
+    </script>
+{% endblock extra_js %}
