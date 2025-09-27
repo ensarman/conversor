@@ -8,9 +8,12 @@ django = "*"
 openpyxl = "*"
 xlrd = "*"
 beautifulsoup4 = "*"
+mariadb = "*"
+mysqlclient = "*"
 
 [dev-packages]
 djlint = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.13"
