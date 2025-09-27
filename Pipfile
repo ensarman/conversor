@@ -9,6 +9,7 @@ openpyxl = "*"
 xlrd = "*"
 beautifulsoup4 = "*"
 mysqlclient = "*"
+dotenv = "*"
 
 [dev-packages]
 djlint = "*"
