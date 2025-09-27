@@ -9,7 +9,7 @@ COPY Pipfile Pipfile.lock /app/
 
 # Instalar pipenv y generar requirements.txt
 RUN pip install --no-cache-dir pipenv \
-  && pipenv lock --requirements > requirements.txt
+  && pipenv requirements --exclude-markers > requirements.txt
 
 # Instalar las dependencias desde requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
