@@ -1,6 +1,14 @@
 # Usar una imagen base oficial de Python
 FROM python:3.13-slim
 
+# Instalar dependencias del sistema para mysqlclient
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  build-essential \
+  default-libmysqlclient-dev \
+  pkg-config \
+  && rm -rf /var/lib/apt/lists/*
+
 # Establecer el directorio de trabajo en el contenedor
 WORKDIR /app
 
